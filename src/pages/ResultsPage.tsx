@@ -1,4 +1,4 @@
-﻿import { useMemo, useState } from 'react'
+﻿import { useEffect, useMemo, useState } from 'react'
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -30,7 +30,7 @@ import {
   type SampleAverageRank,
 } from '../utils/statistics'
 import { ACTIVE_SAMPLES, RANDOM_SUCCESS_PROBABILITY, TRUE_ORDER } from '../config'
-import { isUsingFirebase } from '../services/submissions'
+import { clearLocalSubmissions, isUsingFirebase } from '../services/submissions'
 import type { SampleId } from '../types'
 import type { Submission } from '../types'
 import { generateTestDataset } from '../utils/testDataset'
@@ -91,9 +91,12 @@ interface CommentEntry {
   hardness: Partial<Record<SampleId, number>>
   comment: string | null
 }
+type ResetStatus = 'idle' | 'success' | 'firebase-blocked' | 'error'
 export default function ResultsPage() {
   const { data: submissions, isLoading } = useSubmissions()
   const [testData, setTestData] = useState<Submission[]>([])
+  const [isCommentCleared, setIsCommentCleared] = useState(false)
+  const [resetStatus, setResetStatus] = useState<ResetStatus>('idle')
   const combinedSubmissions = useMemo(
     () =>
       testData.length === 0 ? submissions : [...submissions, ...testData],
@@ -163,23 +166,81 @@ export default function ResultsPage() {
       .sort((a, b) => b.timestamp - a.timestamp)
     return entries
   }, [combinedSubmissions])
+  useEffect(() => {
+    if (commentEntries.length === 0) {
+      setIsCommentCleared(false)
+    }
+  }, [commentEntries.length])
+  useEffect(() => {
+    if (resetStatus === 'success' && combinedSubmissions.length > 0) {
+      setResetStatus('idle')
+    }
+  }, [combinedSubmissions.length, resetStatus])
+  const visibleCommentEntries = useMemo(
+    () => (isCommentCleared ? [] : commentEntries),
+    [commentEntries, isCommentCleared],
+  )
+  const hasCommentEntries = commentEntries.length > 0
+  const commentPanelNote = hasCommentEntries
+    ? 'アンケートの表示をクリアしました。'
+    : 'まだ回答がありません。'
+  const resetMessage =
+    resetStatus === 'success'
+      ? 'ローカルに保存されていた集計結果をリセットしました。'
+      : resetStatus === 'firebase-blocked'
+        ? 'Firebase接続時はこの画面からはリセットできません。Firestoreの管理画面で削除してください。'
+        : resetStatus === 'error'
+          ? 'リセットに失敗しました。ページを再読み込みしてから再試行してください。'
+          : null
+  const resetNoteClass =
+    resetStatus === 'success'
+      ? 'panel-note panel-note-success'
+      : 'panel-note panel-note-warning'
   const displayCount = combinedSubmissions.length
   const testCount = testData.length
   const rankKey = `rank-${combinedSubmissions.length}-${testCount}`
   const hardnessKey = `hardness-${estimatedAnalysis.count}-${testCount}`
+  const handleResetAggregates = async () => {
+    setResetStatus('idle')
+    if (isUsingFirebase) {
+      setResetStatus('firebase-blocked')
+      return
+    }
+    try {
+      const cleared = await clearLocalSubmissions()
+      if (cleared) {
+        setTestData([])
+        setIsCommentCleared(false)
+        setResetStatus('success')
+      } else {
+        setResetStatus('firebase-blocked')
+      }
+    } catch {
+      setResetStatus('error')
+    }
+  }
   return (
     <div className="page">
       <section className="panel">
         <div className="panel-header">
           <h2>集計ダッシュボード</h2>
-          <span className="badge">
-            {isUsingFirebase ? 'Firebase が有効です' : 'ローカルモードで集計中'}
-          </span>
-          {testCount > 0 ? (
-            <span className="badge badge-secondary">
-              テストデータ {testCount} 件含む
+          <div className="panel-header-actions">
+            <span className="badge">
+              {isUsingFirebase ? 'Firebase が有効です' : 'ローカルモードで集計中'}
             </span>
-          ) : null}
+            {testCount > 0 ? (
+              <span className="badge badge-secondary">
+                テストデータ {testCount} 件含む
+              </span>
+            ) : null}
+            <button
+              type="button"
+              className="button button-secondary button-compact"
+              onClick={handleResetAggregates}
+            >
+              集計結果をリセット
+            </button>
+          </div>
         </div>
         <p className="panel-description">
           {isLoading
@@ -188,6 +249,9 @@ export default function ResultsPage() {
               ? 'まだ回答がありません。テストデータを投入して、グラフ表示を確認できます。'
               : `現在 ${displayCount} 件の回答が集まっています。`}
         </p>
+        {resetMessage ? (
+          <p className={resetNoteClass}>{resetMessage}</p>
+        ) : null}
         <div className="summary-grid">
           <div className="summary-card">
             <h3>正答数</h3>
@@ -271,12 +335,23 @@ export default function ResultsPage() {
         )}
       </section>
       <section className="panel">
-        <h3>回答一覧（推定順・硬度・コメント）</h3>
+        <div className="panel-header">
+          <h3>回答一覧（推定順・硬度・コメント）</h3>
+          <button
+            type="button"
+            className="button button-secondary button-compact"
+            onClick={() => setIsCommentCleared((prev) => !prev)}
+            disabled={!hasCommentEntries}
+            aria-pressed={isCommentCleared}
+          >
+            {isCommentCleared ? 'アンケートを再表示' : 'アンケートをクリア'}
+          </button>
+        </div>
         <p className="panel-description">
           予想の並び、各サンプルの推定硬度、自由記述のコメントを提出順に一覧表示します。
         </p>
-        {commentEntries.length === 0 ? (
-          <p className="panel-note">まだ回答がありません。</p>
+        {visibleCommentEntries.length === 0 ? (
+          <p className="panel-note">{commentPanelNote}</p>
         ) : (
           <div className="pattern-table-wrapper">
             <table className="pattern-table">
@@ -289,7 +364,7 @@ export default function ResultsPage() {
                 </tr>
               </thead>
               <tbody>
-                {commentEntries.map((entry) => (
+                {visibleCommentEntries.map((entry) => (
                   <tr key={entry.id}>
                     <td>{new Date(entry.timestamp).toLocaleString()}</td>
                     <td className="pattern-table-order">{formatOrder(entry.order)}</td>

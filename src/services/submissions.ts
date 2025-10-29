@@ -182,6 +182,15 @@ function notifyLocal(): void {
   localListeners.forEach((listener) => listener(snapshot))
 }
 
+export async function clearLocalSubmissions(): Promise<boolean> {
+  if (firestore) {
+    return false
+  }
+  persistLocal([])
+  notifyLocal()
+  return true
+}
+
 function getStorage(): Storage | null {
   if (typeof window === 'undefined') {
     return null
