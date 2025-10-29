@@ -1,0 +1,676 @@
+﻿<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>水の硬度テスト（二項検定ビジュアライザー）</title>
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js" defer></script>
+    <style>
+      :root {
+        color-scheme: light;
+        --bg-color: #f5f7fb;
+        --surface-color: #ffffff;
+        --primary-color: #2563eb;
+        --primary-dark: #1e40af;
+        --accent-color: #f97316;
+        --highlight-color: #dc2626;
+        --text-color: #1f2937;
+        --muted-text: #6b7280;
+        --border-color: #e5e7eb;
+        --radius: 12px;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        font-family: "Segoe UI", "Hiragino Sans", "Meiryo", sans-serif;
+        background: var(--bg-color);
+        color: var(--text-color);
+        line-height: 1.6;
+      }
+
+      header {
+        padding: 2.5rem 1.5rem 1.5rem;
+        text-align: center;
+      }
+
+      header h1 {
+        margin: 0 0 0.75rem;
+        font-size: clamp(1.8rem, 4vw, 2.6rem);
+        font-weight: 700;
+      }
+
+      header p {
+        margin: 0 auto;
+        max-width: 620px;
+        color: var(--muted-text);
+        font-size: 1rem;
+      }
+
+      main {
+        width: min(1180px, 94vw);
+        margin: 0 auto 3rem;
+        display: grid;
+        grid-template-columns: minmax(280px, 340px) 1fr;
+        gap: 1.75rem;
+      }
+
+      .card {
+        background: var(--surface-color);
+        border-radius: var(--radius);
+        padding: 1.6rem;
+        box-shadow: 0 12px 32px rgba(15, 23, 42, 0.08);
+      }
+
+      .card h2 {
+        margin: 0 0 1.1rem;
+        font-size: 1.2rem;
+        color: var(--primary-dark);
+      }
+
+      form {
+        display: grid;
+        gap: 1.1rem;
+      }
+
+      .field label {
+        display: flex;
+        justify-content: space-between;
+        font-size: 0.95rem;
+        margin-bottom: 0.35rem;
+        font-weight: 600;
+      }
+
+      .field .hint {
+        font-weight: 400;
+        color: var(--muted-text);
+      }
+
+      .field input[type="number"] {
+        width: 100%;
+        padding: 0.7rem 0.8rem;
+        border-radius: 8px;
+        border: 1px solid var(--border-color);
+        font-size: 1rem;
+        transition: border-color 0.2s ease, box-shadow 0.2s ease;
+      }
+
+      .field input[type="number"]:focus {
+        outline: none;
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.15);
+      }
+
+      .radio-group {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+      }
+
+      .radio-option {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        font-size: 0.9rem;
+        color: var(--text-color);
+      }
+
+      .radio-option input[type="radio"] {
+        accent-color: var(--primary-color);
+      }
+
+      .button-wrapper {
+        display: flex;
+        justify-content: flex-end;
+      }
+
+      button {
+        border: none;
+        cursor: pointer;
+        border-radius: 9px;
+        padding: 0.8rem 1.6rem;
+        font-size: 1rem;
+        font-weight: 600;
+        color: #fff;
+        background: var(--primary-color);
+        transition: transform 0.2s ease, box-shadow 0.2s ease,
+          background 0.2s ease;
+      }
+
+      button:hover {
+        background: var(--primary-dark);
+        transform: translateY(-1px);
+        box-shadow: 0 8px 18px rgba(37, 99, 235, 0.25);
+      }
+
+      .error-area {
+        display: none;
+        border-radius: 9px;
+        border: 1px solid rgba(220, 38, 38, 0.3);
+        background: rgba(220, 38, 38, 0.1);
+        padding: 0.9rem 1rem;
+        color: var(--highlight-color);
+        font-size: 0.92rem;
+      }
+
+      .error-area ul {
+        margin: 0;
+        padding-left: 1.1rem;
+      }
+
+      .chart-card {
+        display: flex;
+        flex-direction: column;
+        gap: 1.2rem;
+      }
+
+      .legend {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1rem;
+        font-size: 0.92rem;
+      }
+
+      .legend span {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+
+      .legend i {
+        display: inline-block;
+        width: 14px;
+        height: 14px;
+        border-radius: 4px;
+      }
+
+      .results-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 1rem;
+      }
+
+      .result-card h3 {
+        margin: 0;
+        font-size: 0.95rem;
+        color: var(--muted-text);
+      }
+
+      .result-card p {
+        margin: 0.5rem 0 0;
+        font-size: 1.35rem;
+        font-weight: 700;
+        color: var(--text-color);
+      }
+
+      .chart-area {
+        position: relative;
+        width: 100%;
+        height: clamp(260px, 48vh, 360px);
+      }
+
+      .chart-area canvas {
+        width: 100% !important;
+        height: 100% !important;
+      }
+
+      @media (max-width: 940px) {
+        main {
+          grid-template-columns: 1fr;
+        }
+
+        header {
+          padding-bottom: 0.5rem;
+        }
+      }
+
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>水の硬度テスト：当てクイズ</h1>
+      <p>
+        水には「硬水」「軟水」などの硬度のちがいがあります。飲み比べ実験で、参加者が硬度の違いを当てられるのは本当に能力なのか、それともたまたまなのでしょうか。
+        ここでの「成功」は「正しく硬水を当てられた回数」を意味し、n・p・k・α を入力すると偶然だけでここまで当てられるかが見えてきます。
+        さらに二項検定を用いることで、「まぐれ」かどうかを検定することができます。
+      </p>
+    </header>
+    <main>
+      <section class="card">
+        <h2>条件</h2>
+        <form id="control-form" novalidate>
+          <div class="field">
+            <label for="trials">
+              試行回数 n
+              <span class="hint">飲み比べした人数</span>
+            </label>
+            <input
+              id="trials"
+              name="trials"
+              type="number"
+              min="1"
+              step="1"
+              placeholder="例: 10"
+              required
+            />
+          </div>
+          <div class="field">
+            <label for="probability">
+              成功率 p
+              <span class="hint">まぐれで当たる確率</span>
+            </label>
+            <input
+              id="probability"
+              name="probability"
+              type="number"
+              min="0"
+              max="1"
+              step="0.0001"
+              placeholder="例: 0.0416666"
+              required
+            />
+          </div>
+          <div class="field">
+            <label for="successes">
+              観測された成功数 k
+              <span class="hint">実際に当たった回数</span>
+            </label>
+            <input
+              id="successes"
+              name="successes"
+              type="number"
+              min="0"
+              step="1"
+              placeholder="例: 2"
+              required
+            />
+          </div>
+          <div class="field">
+            <label for="alpha">
+              有意水準 α
+              <span class="hint">この確率より低いと「まぐれとは言えない」と考える基準</span>
+            </label>
+            <input
+              id="alpha"
+              name="alpha"
+              type="number"
+              min="0"
+              max="1"
+              step="0.0001"
+              placeholder="例: 0.05"
+              required
+            />
+          </div>
+          <div class="field">
+            <label id="test-type-group-label">
+              検定の種類
+              <span class="hint">どの方向に差があるかを想定します</span>
+            </label>
+            <div
+              class="radio-group"
+              role="radiogroup"
+              aria-labelledby="test-type-group-label"
+            >
+              <label class="radio-option" for="test-type-two-sided">
+                <input
+                  id="test-type-two-sided"
+                  name="test-type"
+                  type="radio"
+                  value="two-sided"
+                />
+                両側検定
+              </label>
+              <label class="radio-option" for="test-type-greater">
+                <input
+                  id="test-type-greater"
+                  name="test-type"
+                  type="radio"
+                  value="greater"
+                  checked
+                />
+                片側（成功率が高い方向）
+              </label>
+              <label class="radio-option" for="test-type-less">
+                <input
+                  id="test-type-less"
+                  name="test-type"
+                  type="radio"
+                  value="less"
+                />
+                片側（成功率が低い方向）
+              </label>
+            </div>
+          </div>
+          <div class="error-area" id="error-area">
+            <ul id="error-list"></ul>
+          </div>
+          <div class="button-wrapper">
+            <button type="submit">結果を見る</button>
+          </div>
+        </form>
+      </section>
+      <section class="card chart-card">
+        <div>
+          <h2>結果</h2>
+          <p class="legend">
+            <span><i style="background: rgba(37, 99, 235, 0.65)"></i>青：まぐれでも起きうる</span>
+            <span><i style="background: rgba(239, 68, 68, 0.8)"></i>赤：まぐれでは起きにくい（棄却域）</span>
+            <span><i style="background: #f97316; border-radius: 50%"></i>オレンジマーカー：今回の結果の位置</span>
+          </p>
+        </div>
+        <div class="results-grid">
+          <div class="card result-card">
+            <h3>観測された成功数 k（実際に当てた回数）</h3>
+            <p id="observed-value">-</p>
+          </div>
+          <div class="card result-card">
+            <h3>p 値（たまたま同じくらい当たるまぐれ確率）</h3>
+            <p id="p-value">-</p>
+          </div>
+          <div class="card result-card">
+            <h3>判定（まぐれかどうか）</h3>
+            <p id="decision">-</p>
+          </div>
+        </div>
+        <div class="chart-area">
+          <canvas id="result-chart" aria-label="硬水クイズの理論分布"></canvas>
+        </div>
+      </section>
+    </main>
+    <script>
+      const EPSILON = 1e-12;
+
+      const TEST_TYPE_LABELS = {
+        "two-sided": "両側検定",
+        "greater": "片側検定（成功率が高い方向）",
+        "less": "片側検定（成功率が低い方向）",
+      };
+
+      const VALID_TEST_TYPES = new Set(Object.keys(TEST_TYPE_LABELS));
+
+      function computeBinomialPmf(n, probability) {
+        const pmf = new Array(n + 1).fill(0);
+
+        if (probability === 0) {
+          pmf[0] = 1;
+          return pmf;
+        }
+
+        if (probability === 1) {
+          pmf[n] = 1;
+          return pmf;
+        }
+
+        let prob = Math.pow(1 - probability, n);
+        pmf[0] = prob;
+        const ratio = probability / (1 - probability);
+
+        for (let k = 1; k <= n; k += 1) {
+          prob *= ((n - k + 1) / k) * ratio;
+          pmf[k] = prob;
+        }
+
+        return pmf;
+      }
+
+      function createRangeLabels(n) {
+        return Array.from({ length: n + 1 }, (_, index) => index);
+      }
+
+      function computePValue(pmf, observed, testType) {
+        const observedProb = pmf[observed] ?? 0;
+        if (testType === "two-sided") {
+          let sum = 0;
+          pmf.forEach((prob) => {
+            if (prob <= observedProb + EPSILON) {
+              sum += prob;
+            }
+          });
+          return Math.min(1, sum);
+        }
+
+        if (testType === "greater") {
+          let sum = 0;
+          for (let index = observed; index < pmf.length; index += 1) {
+            sum += pmf[index];
+          }
+          return Math.min(1, sum);
+        }
+
+        if (testType === "less") {
+          let sum = 0;
+          for (let index = 0; index <= observed; index += 1) {
+            sum += pmf[index];
+          }
+          return Math.min(1, sum);
+        }
+
+        return Math.min(1, observedProb);
+      }
+
+      function createHighlightFlags(labels, pmf, observed, testType, alpha) {
+        return labels.map((value) => {
+          const pValueForValue = computePValue(pmf, value, testType);
+          const isSignificantForValue = pValueForValue < alpha;
+          if (value === observed) {
+            return isSignificantForValue ? "observed-significant" : "observed";
+          }
+          return isSignificantForValue ? "extreme" : "typical";
+        });
+      }
+
+      const form = document.getElementById("control-form");
+      const errorArea = document.getElementById("error-area");
+      const errorList = document.getElementById("error-list");
+      const observedValueEl = document.getElementById("observed-value");
+      const pValueEl = document.getElementById("p-value");
+      const decisionEl = document.getElementById("decision");
+      const chartCanvas = document.getElementById("result-chart");
+
+      const BAR_COLORS = {
+        base: "rgba(37, 99, 235, 0.65)",
+        extreme: "rgba(239, 68, 68, 0.8)",
+        marker: "#f97316",
+      };
+
+      const observedMarkerPlugin = {
+        id: "observedMarker",
+        afterDatasetsDraw(chart) {
+          const dataset = chart.data.datasets[0];
+          const flags = dataset?.highlightFlags;
+          if (!flags) {
+            return;
+          }
+
+          const meta = chart.getDatasetMeta(0);
+          const { ctx } = chart;
+          meta.data.forEach((bar, index) => {
+            if (
+              flags[index] !== "observed" &&
+              flags[index] !== "observed-significant"
+            ) {
+              return;
+            }
+
+            const markerRadius = 6;
+            const markerOffset = 12;
+            ctx.save();
+            ctx.fillStyle = BAR_COLORS.marker;
+            ctx.strokeStyle = "#ffffff";
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(bar.x, bar.y - markerOffset, markerRadius, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+            ctx.restore();
+          });
+        },
+      };
+
+      let chartInstance;
+
+      function renderChart(labels, probabilities, highlightFlags) {
+        const backgroundColors = labels.map((_, index) => {
+          const flag = highlightFlags[index];
+          if (flag === "observed-significant") {
+            return BAR_COLORS.marker;
+          }
+          if (flag === "extreme") {
+            return BAR_COLORS.extreme;
+          }
+          return BAR_COLORS.base;
+        });
+
+        if (chartInstance) {
+          chartInstance.data.labels = labels;
+          chartInstance.data.datasets[0].data = probabilities;
+          chartInstance.data.datasets[0].backgroundColor = backgroundColors;
+          chartInstance.data.datasets[0].highlightFlags = highlightFlags;
+          chartInstance.update();
+          return;
+        }
+
+        chartInstance = new Chart(chartCanvas, {
+          type: "bar",
+          data: {
+            labels,
+            datasets: [
+              {
+                label: "偶然だったときの正解数の分布",
+                data: probabilities,
+                backgroundColor: backgroundColors,
+                borderRadius: 6,
+                highlightFlags,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { display: false },
+              tooltip: {
+                callbacks: {
+                  label: (context) => `確率: ${(context.raw * 100).toFixed(2)}%`,
+                },
+              },
+            },
+            scales: {
+              x: {
+                title: {
+                  display: true,
+                  text: "正解数（成功＝正しく硬水を当てた回数）",
+                },
+              },
+              y: {
+                title: {
+                  display: true,
+                  text: "確率",
+                },
+                beginAtZero: true,
+                ticks: {
+                  callback: (value) => `${(Number(value) * 100).toFixed(0)}%`,
+                },
+              },
+            },
+          },
+          plugins: [observedMarkerPlugin],
+        });
+      }
+
+      function displayErrors(messages) {
+        if (!messages.length) {
+          errorArea.style.display = "none";
+          errorList.innerHTML = "";
+          return;
+        }
+
+        errorArea.style.display = "block";
+        errorList.innerHTML = messages.map((msg) => `<li>${msg}</li>`).join("");
+      }
+
+      function formatNumber(value, digits = 4) {
+        return Number.parseFloat(value).toFixed(digits);
+      }
+
+      function handleCalculation(event) {
+        event?.preventDefault();
+
+        const formData = new FormData(form);
+        const n = Number(formData.get("trials"));
+        const probability = Number(formData.get("probability"));
+        const successes = Number(formData.get("successes"));
+        const alpha = Number(formData.get("alpha"));
+
+        const errors = [];
+        if (!Number.isInteger(n) || n <= 0) {
+          errors.push("テイスティングした回数 n は 1 以上の整数で指定してください。");
+        }
+        if (!(probability >= 0 && probability <= 1)) {
+          errors.push("偶然で当たる確率 p は 0〜1 の範囲で指定してください。");
+        }
+        if (!Number.isInteger(successes) || successes < 0 || successes > n) {
+          errors.push("今回当てた杯数 k は 0〜n の整数で指定してください。");
+        }
+        if (!(alpha > 0 && alpha < 1)) {
+          errors.push("合格ライン α は 0 より大きく 1 未満の値にしてください。");
+        }
+
+        displayErrors(errors);
+        if (errors.length) {
+          return;
+        }
+
+        const testType = VALID_TEST_TYPES.has(formData.get("test-type"))
+          ? formData.get("test-type")
+          : "two-sided";
+
+        const pmf = computeBinomialPmf(n, probability);
+        const pValue = computePValue(pmf, successes, testType);
+        const isSignificant = pValue < alpha;
+        const testLabel = TEST_TYPE_LABELS[testType];
+        const decision =
+          isSignificant
+            ? `${testLabel}の結果、差があると言えそう（まぐれとは言えない）(p 値 ${formatNumber(
+                pValue
+              )}, α ${formatNumber(alpha)})`
+            : `${testLabel}の結果、差があると言えない（まだまぐれかも）(p 値 ${formatNumber(
+                pValue
+              )}, α ${formatNumber(alpha)})`;
+
+        const labels = createRangeLabels(n);
+        const highlightFlags = createHighlightFlags(
+          labels,
+          pmf,
+          successes,
+          testType,
+          alpha
+        );
+
+        renderChart(labels, pmf, highlightFlags);
+
+        observedValueEl.textContent = `${successes} 回（正解率 ${formatNumber(
+          successes / n,
+          3
+        )}）`;
+        pValueEl.textContent = formatNumber(pValue, 4);
+        decisionEl.textContent = decision;
+      }
+
+      form.addEventListener("submit", handleCalculation);
+
+      document.addEventListener("DOMContentLoaded", () => {
+        document.getElementById("trials").value = 10;
+        document.getElementById("probability").value = 0.041666;
+        document.getElementById("successes").value = 2;
+        document.getElementById("alpha").value = 0.05;
+        document.getElementById("test-type-greater").checked = true;
+        handleCalculation();
+      });
+    </script>
+  </body>
+</html>
