@@ -4,30 +4,30 @@ export const WATER_SAMPLES: WaterSample[] = [
   {
     id: 'A',
     label: 'サンプル A',
-    hardness: 120,
+    hardness: 300,
     hardnessError: 10,
   },
   {
     id: 'B',
     label: 'サンプル B',
-    hardness: 70,
+    hardness: 50,
     hardnessError: 6,
   },
   {
     id: 'C',
     label: 'サンプル C',
-    hardness: 180,
+    hardness: 800,
     hardnessError: 12,
   },
   {
     id: 'D',
     label: 'サンプル D',
-    hardness: 40,
-    hardnessError: 5,
+    hardness: 1500,
+    hardnessError: 20,
   },
 ]
 
-export const CORRECT_ORDER: SampleId[] = ['A', 'B', 'C', 'D']
+export const CORRECT_ORDER: SampleId[] = ['B', 'A', 'D', 'C']
 
 export const ACTIVE_SAMPLES: WaterSample[] = CORRECT_ORDER.map((id) => {
   const sample = WATER_SAMPLES.find((item) => item.id === id)

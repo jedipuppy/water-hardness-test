@@ -1,6 +1,7 @@
 import { NavLink, Route, Routes } from 'react-router-dom'
 import InputPage from './pages/InputPage'
 import ResultsPage from './pages/ResultsPage'
+import AnalysisPage from './pages/AnalysisPage'
 import './App.css'
 
 type NavLinkItem =
@@ -10,6 +11,7 @@ type NavLinkItem =
 const navLinks: NavLinkItem[] = [
   { kind: 'route', to: '/', label: '入力' },
   { kind: 'route', to: '/results', label: '集計' },
+  { kind: 'route', to: '/analysis', label: '分析' },
   { kind: 'external', href: 'https://accel-kitchen.com/app/water-hardness-test/test.html', label: 'テストページ', newTab: true },
 ]
 
@@ -55,6 +57,7 @@ function App() {
         <Routes>
           <Route path="/" element={<InputPage />} />
           <Route path="/results" element={<ResultsPage />} />
+          <Route path="/analysis" element={<AnalysisPage />} />
         </Routes>
       </main>
       <footer className="app-footer">

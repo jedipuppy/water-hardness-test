@@ -259,18 +259,17 @@
             />
           </div>
           <div class="field">
-            <label for="probability">
-              成功率 p
-              <span class="hint">まぐれで当たる確率</span>
+            <label for="probability-denominator">
+              成功率 p の分母 X（p = 1 / X）
+              <span class="hint">例: 1/4 の場合は 4 を入力</span>
             </label>
             <input
-              id="probability"
-              name="probability"
+              id="probability-denominator"
+              name="probability-denominator"
               type="number"
-              min="0"
-              max="1"
-              step="0.0001"
-              placeholder="例: 0.0416666"
+              min="1"
+              step="1"
+              placeholder="例: 24"
               required
             />
           </div>
@@ -602,7 +601,9 @@
 
         const formData = new FormData(form);
         const n = Number(formData.get("trials"));
-        const probability = Number(formData.get("probability"));
+        const probabilityDenominator = Number(
+          formData.get("probability-denominator")
+        );
         const successes = Number(formData.get("successes"));
         const alpha = Number(formData.get("alpha"));
 
@@ -610,8 +611,8 @@
         if (!Number.isInteger(n) || n <= 0) {
           errors.push("テイスティングした回数 n は 1 以上の整数で指定してください。");
         }
-        if (!(probability >= 0 && probability <= 1)) {
-          errors.push("偶然で当たる確率 p は 0〜1 の範囲で指定してください。");
+        if (!Number.isFinite(probabilityDenominator) || probabilityDenominator <= 0) {
+          errors.push("成功率 p の分母 X は 1 以上の数値で指定してください。");
         }
         if (!Number.isInteger(successes) || successes < 0 || successes > n) {
           errors.push("今回当てた杯数 k は 0〜n の整数で指定してください。");
@@ -628,6 +629,8 @@
         const testType = VALID_TEST_TYPES.has(formData.get("test-type"))
           ? formData.get("test-type")
           : "two-sided";
+
+        const probability = 1 / probabilityDenominator;
 
         const pmf = computeBinomialPmf(n, probability);
         const pValue = computePValue(pmf, successes, testType);
@@ -664,8 +667,8 @@
       form.addEventListener("submit", handleCalculation);
 
       document.addEventListener("DOMContentLoaded", () => {
-        document.getElementById("trials").value = 10;
-        document.getElementById("probability").value = 0.041666;
+        document.getElementById("trials").value = 6;
+        document.getElementById("probability-denominator").value = 6;
         document.getElementById("successes").value = 2;
         document.getElementById("alpha").value = 0.05;
         document.getElementById("test-type-greater").checked = true;
