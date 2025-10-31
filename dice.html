@@ -2,16 +2,16 @@
 <html lang="ja">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>サイコロロール</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>サイコロシミュレーター</title>
     <style>
       :root {
         font-family: "Segoe UI", "Hiragino Sans", "Meiryo", sans-serif;
         color-scheme: light dark;
-        --accent: #2563eb;
-        --accent-dark: #1d4ed8;
         --surface: rgba(255, 255, 255, 0.9);
-        --shadow: rgba(15, 23, 42, 0.12);
+        --primary: #2563eb;
+        --primary-dark: #1d4ed8;
+        --shadow: rgba(15, 23, 42, 0.16);
       }
 
       * {
@@ -24,60 +24,59 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        background: linear-gradient(135deg, #dbeafe 0%, #f8fafc 100%);
+        background: radial-gradient(circle at top, #dbeafe, #f8fafc 70%);
       }
 
-      .app {
-        width: min(560px, 92vw);
-        padding: clamp(1.8rem, 4vw, 2.6rem);
+      main {
+        width: min(720px, 94vw);
+        padding: clamp(1.6rem, 4vw, 2.8rem);
+        border-radius: 20px;
         background: var(--surface);
-        border-radius: 18px;
-        box-shadow: 0 30px 60px -30px var(--shadow);
+        box-shadow: 0 30px 70px -40px var(--shadow);
         display: grid;
-        gap: 1.5rem;
+        gap: clamp(1.4rem, 3vw, 2.2rem);
       }
 
       h1 {
         margin: 0;
-        font-size: clamp(1.6rem, 4vw, 2.2rem);
+        font-size: clamp(1.6rem, 4vw, 2.4rem);
         text-align: center;
-        color: var(--accent-dark);
+        color: var(--primary-dark);
       }
 
       .dice-board {
         display: flex;
-        justify-content: center;
-        gap: clamp(1.5rem, 5vw, 2.4rem);
         flex-wrap: wrap;
+        justify-content: center;
+        gap: clamp(1.4rem, 4vw, 2.2rem);
         perspective: 900px;
       }
 
       .die {
-        width: clamp(72px, 25vw, 120px);
+        width: clamp(68px, 22vw, 110px);
         aspect-ratio: 1 / 1;
         border-radius: 18px;
         background: #fff;
         box-shadow: inset 0 0 0 1px rgba(148, 163, 184, 0.35),
-          0 18px 32px -24px rgba(15, 23, 42, 0.45);
+          0 18px 36px -26px rgba(15, 23, 42, 0.55);
+        padding: clamp(0.6rem, 1.5vw, 0.9rem);
         display: grid;
-        padding: clamp(0.6rem, 1.6vw, 1rem);
         position: relative;
         transform: translateZ(0);
-        transition: transform 0.35s cubic-bezier(0.33, 1, 0.68, 1),
-          box-shadow 0.35s ease;
+        transition: box-shadow 0.3s ease;
       }
 
       .die.is-rolling {
-        animation: roll-spin 0.6s cubic-bezier(0.36, 0.07, 0.19, 0.97) infinite;
-        box-shadow: inset 0 0 0 1px rgba(148, 163, 184, 0.35),
-          0 28px 46px -22px rgba(37, 99, 235, 0.45);
+        animation: roll-spin 0.6s cubic-bezier(0.35, 0.14, 0.23, 0.98) infinite;
+        box-shadow: inset 0 0 0 1px rgba(148, 163, 184, 0.3),
+          0 26px 40px -24px rgba(37, 99, 235, 0.5);
       }
 
       .pip {
-        width: clamp(14px, 4vw, 18px);
+        width: clamp(12px, 4vw, 18px);
         aspect-ratio: 1 / 1;
         border-radius: 50%;
-        background: radial-gradient(circle at 30% 30%, #fff 0%, #f1f5f9 70%);
+        background: radial-gradient(circle at 30% 30%, #fff 0%, #eef2ff 70%);
         box-shadow: inset -1px -1px 3px rgba(15, 23, 42, 0.25);
         margin: auto;
       }
@@ -87,76 +86,81 @@
       }
 
       .controls {
-        text-align: center;
         display: grid;
         gap: 1rem;
+        text-align: center;
       }
 
       .controls form {
         display: flex;
-        justify-content: center;
-        gap: 0.75rem;
         flex-wrap: wrap;
+        justify-content: center;
         align-items: center;
+        gap: 0.9rem;
       }
 
       .controls label {
-        font-size: 0.95rem;
-        color: #475569;
         display: flex;
         align-items: center;
-        gap: 0.5rem;
-      }
-
-      .controls input[type="number"] {
-        width: clamp(70px, 14vw, 90px);
-        padding: 0.55rem 0.65rem;
+        gap: 0.6rem;
+        font-size: 0.95rem;
+        color: #475569;
+        background: rgba(226, 232, 240, 0.45);
         border-radius: 999px;
-        border: 1px solid rgba(148, 163, 184, 0.65);
-        background: rgba(255, 255, 255, 0.9);
-        font-size: 1rem;
-        text-align: center;
-        transition: border-color 0.18s ease;
+        padding: 0.4rem 0.85rem;
       }
 
+      .controls input,
       .controls select {
-        padding: 0.55rem 0.9rem;
         border-radius: 999px;
-        border: 1px solid rgba(148, 163, 184, 0.65);
-        background: rgba(255, 255, 255, 0.9);
+        border: 1px solid rgba(148, 163, 184, 0.55);
+        background: rgba(255, 255, 255, 0.92);
         font-size: 1rem;
-        transition: border-color 0.18s ease;
+        padding: 0.45rem 0.8rem;
+        transition: border-color 0.2s ease, box-shadow 0.2s ease;
       }
 
+      .controls input:focus,
       .controls select:focus {
         outline: none;
-        border-color: var(--accent);
-        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.16);
       }
 
-      .controls input[type="number"]:focus {
-        outline: none;
-        border-color: var(--accent);
-        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+      .button-row {
+        display: flex;
+        justify-content: center;
+        gap: 0.75rem;
+        flex-wrap: wrap;
       }
 
       button {
         cursor: pointer;
-        padding: 0.9rem clamp(2.8rem, 6vw, 3.6rem);
+        padding: 0.85rem 2.75rem;
         border-radius: 999px;
         border: none;
         font-size: 1rem;
         font-weight: 600;
         color: #fff;
-        background: var(--accent);
+        background: var(--primary);
+        box-shadow: 0 18px 32px -22px rgba(37, 99, 235, 0.6);
         transition: transform 0.18s ease, box-shadow 0.18s ease,
           background 0.18s ease;
       }
 
+      button.secondary {
+        background: #64748b;
+        box-shadow: 0 18px 32px -24px rgba(100, 116, 139, 0.5);
+      }
+
       button:hover {
         transform: translateY(-2px);
-        background: var(--accent-dark);
-        box-shadow: 0 18px 26px -18px rgba(37, 99, 235, 0.6);
+        background: var(--primary-dark);
+        box-shadow: 0 22px 36px -20px rgba(37, 99, 235, 0.65);
+      }
+
+      button.secondary:hover {
+        background: #4b5563;
       }
 
       button:active {
@@ -165,16 +169,61 @@
       }
 
       .result {
-        font-size: clamp(1.8rem, 5vw, 2.4rem);
+        font-size: clamp(1.8rem, 5vw, 2.3rem);
         font-weight: 700;
-        text-align: center;
         color: #0f172a;
+        text-align: center;
       }
 
       .history {
-        font-size: 0.95rem;
-        color: #475569;
+        margin: 0;
         text-align: center;
+        color: #475569;
+        font-size: 0.96rem;
+      }
+
+      .stats-panel {
+        display: grid;
+        gap: 1.1rem;
+      }
+
+      .stats {
+        display: grid;
+        gap: 0.85rem;
+      }
+
+      .stats-row {
+        display: grid;
+        grid-template-columns: 36px 64px 1fr 64px;
+        align-items: center;
+        gap: 1rem;
+        font-size: 0.95rem;
+      }
+
+      .stats-face {
+        justify-self: center;
+        font-weight: 600;
+        color: #0f172a;
+      }
+
+      .stats-count,
+      .stats-ratio {
+        font-variant-numeric: tabular-nums;
+      }
+
+      .stats-bar {
+        height: 12px;
+        border-radius: 999px;
+        background: rgba(148, 163, 184, 0.28);
+        overflow: hidden;
+      }
+
+      .stats-bar-fill {
+        height: 100%;
+        width: 0;
+        border-radius: inherit;
+        background: linear-gradient(90deg, rgba(37, 99, 235, 0.9), rgba(96, 165, 250, 0.8));
+        transition: width 0.3s ease;
       }
 
       @keyframes roll-spin {
@@ -188,109 +237,90 @@
           transform: rotate3d(1, -1.2, -0.3, -18deg) translateY(-4px);
         }
         60% {
-          transform: rotate3d(-1.1, 1, 0.1, 16deg) translateY(-6px);
+          transform: rotate3d(-1.1, 1, 0.1, 18deg) translateY(-6px);
         }
         80% {
-          transform: rotate3d(0.8, -1.3, 0.2, -20deg) translateY(-3px);
+          transform: rotate3d(0.9, -1.3, 0.2, -20deg) translateY(-3px);
         }
         100% {
           transform: rotate3d(1, 1, 0, 0deg) translateY(0);
         }
       }
 
-      @media (max-width: 540px) {
-        .dice-board {
-          gap: 1.2rem;
+      @media (max-width: 580px) {
+        .stats-row {
+          grid-template-columns: 30px 50px 1fr 60px;
+          gap: 0.6rem;
         }
       }
     </style>
   </head>
   <body>
     <main class="app" aria-live="polite">
-      <h1>サイコロを振る</h1>
-      <section class="dice-board" aria-label="サイコロの出目">
-        <div class="die" role="img" aria-label="サイコロの出目 1">
-          <div class="pip"></div>
-          <div class="pip hidden"></div>
-          <div class="pip hidden"></div>
-          <div class="pip hidden"></div>
-          <div class="pip hidden"></div>
-          <div class="pip hidden"></div>
-          <div class="pip hidden"></div>
-          <div class="pip hidden"></div>
-          <div class="pip hidden"></div>
-        </div>
-      </section>
+      <h1>サイコロシミュレーター</h1>
+      <section class="dice-board" aria-label="サイコロの出目"></section>
       <section class="controls">
         <form id="dice-form">
           <label for="dice-count">
             サイコロの数
-            <input
-              id="dice-count"
-              name="dice-count"
-              type="number"
-              min="1"
-              max="12"
-              value="2"
-              required
-            />
+            <input id="dice-count" name="dice-count" type="number" min="1" max="12" value="2" required />
           </label>
           <label for="dice-type">
-            サイコロ
+            サイコロの種類
             <select id="dice-type" name="dice-type">
               <option value="fair">通常（1〜6）</option>
               <option value="rigged">イカサマ（2,2,3,4,6,6）</option>
             </select>
           </label>
-          <button type="submit" id="update-button">更新</button>
+          <button type="submit" id="update-button">反映</button>
         </form>
-        <button type="button" id="roll-button">サイコロを振る</button>
-        <p class="result" id="total">合計: 2</p>
-        <p class="history" id="history">直近の出目: 1 + 1</p>
+        <div class="button-row">
+          <button type="button" id="roll-button">サイコロを振る</button>
+          <button type="button" id="reset-button" class="secondary">統計をリセット</button>
+        </div>
+        <p class="result" id="total">合計: 0</p>
+        <p class="history" id="history">直近の出目: －</p>
       </section>
       <section class="panel stats-panel">
         <h2>出目の頻度</h2>
-        <table class="stats" aria-label="サイコロの出目頻度">
-          <thead>
-            <tr>
-              <th scope="col">目</th>
-              <th scope="col">回数</th>
-              <th scope="col">割合</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>1</td>
-              <td>0</td>
-              <td>0%</td>
-            </tr>
-            <tr>
-              <td>2</td>
-              <td>0</td>
-              <td>0%</td>
-            </tr>
-            <tr>
-              <td>3</td>
-              <td>0</td>
-              <td>0%</td>
-            </tr>
-            <tr>
-              <td>4</td>
-              <td>0</td>
-              <td>0%</td>
-            </tr>
-            <tr>
-              <td>5</td>
-              <td>0</td>
-              <td>0%</td>
-            </tr>
-            <tr>
-              <td>6</td>
-              <td>0</td>
-              <td>0%</td>
-            </tr>
-          </tbody>
-        </table>
+        <div class="stats" aria-live="polite">
+          <div class="stats-row" data-face="1">
+            <span class="stats-face">1</span>
+            <span class="stats-count">0</span>
+            <div class="stats-bar"><div class="stats-bar-fill"></div></div>
+            <span class="stats-ratio">0%</span>
+          </div>
+          <div class="stats-row" data-face="2">
+            <span class="stats-face">2</span>
+            <span class="stats-count">0</span>
+            <div class="stats-bar"><div class="stats-bar-fill"></div></div>
+            <span class="stats-ratio">0%</span>
+          </div>
+          <div class="stats-row" data-face="3">
+            <span class="stats-face">3</span>
+            <span class="stats-count">0</span>
+            <div class="stats-bar"><div class="stats-bar-fill"></div></div>
+            <span class="stats-ratio">0%</span>
+          </div>
+          <div class="stats-row" data-face="4">
+            <span class="stats-face">4</span>
+            <span class="stats-count">0</span>
+            <div class="stats-bar"><div class="stats-bar-fill"></div></div>
+            <span class="stats-ratio">0%</span>
+          </div>
+          <div class="stats-row" data-face="5">
+            <span class="stats-face">5</span>
+            <span class="stats-count">0</span>
+            <div class="stats-bar"><div class="stats-bar-fill"></div></div>
+            <span class="stats-ratio">0%</span>
+          </div>
+          <div class="stats-row" data-face="6">
+            <span class="stats-face">6</span>
+            <span class="stats-count">0</span>
+            <div class="stats-bar"><div class="stats-bar-fill"></div></div>
+            <span class="stats-ratio">0%</span>
+          </div>
+        </div>
       </section>
     </main>
 
@@ -306,12 +336,10 @@
 
       const DIE_DEFINITIONS = {
         fair: {
-          label: "通常（1〜6）",
           faces: [1, 2, 3, 4, 5, 6],
           patterns: STANDARD_PATTERNS,
         },
         rigged: {
-          label: "イカサマ（2,2,3,4,6,6）",
           faces: [2, 2, 3, 4, 6, 6],
           patterns: {
             2: STANDARD_PATTERNS[2],
@@ -324,12 +352,13 @@
 
       const diceBoard = document.querySelector(".dice-board");
       const rollButton = document.getElementById("roll-button");
+      const resetButton = document.getElementById("reset-button");
       const diceForm = document.getElementById("dice-form");
       const diceCountInput = document.getElementById("dice-count");
       const diceTypeInput = document.getElementById("dice-type");
       const totalLabel = document.getElementById("total");
       const historyLabel = document.getElementById("history");
-      const statsTableBody = document.querySelector(".stats tbody");
+      const statsRows = Array.from(document.querySelectorAll(".stats-row"));
 
       const rollStats = new Map([1, 2, 3, 4, 5, 6].map((value) => [value, 0]));
 
@@ -344,8 +373,8 @@
 
       const updateDie = (dieElement, value, patterns) => {
         const pips = dieElement.querySelectorAll(".pip");
+        const positions = patterns[value] ?? STANDARD_PATTERNS[value];
         pips.forEach((pip, index) => {
-          const positions = patterns[value] ?? STANDARD_PATTERNS[value];
           pip.classList.toggle("hidden", !positions.includes(index + 1));
         });
         dieElement.setAttribute("aria-label", `サイコロの出目 ${value}`);
@@ -353,8 +382,7 @@
 
       const rollDie = (faces) => faces[Math.floor(Math.random() * faces.length)];
 
-      const getDiceElements = () =>
-        Array.from(diceBoard.querySelectorAll(".die"));
+      const getDiceElements = () => Array.from(diceBoard.querySelectorAll(".die"));
 
       const animateRoll = (faces, patterns, callback) => {
         const frames = 12;
@@ -372,43 +400,35 @@
         }, 60);
       };
 
+      const updateStats = () => {
+        const total = Array.from(rollStats.values()).reduce((sum, count) => sum + count, 0);
+        statsRows.forEach((row) => {
+          const face = Number(row.dataset.face);
+          const count = rollStats.get(face) ?? 0;
+          const ratio = total > 0 ? ((count / total) * 100).toFixed(1) : "0.0";
+          row.querySelector(".stats-count").textContent = count;
+          row.querySelector(".stats-ratio").textContent = `${ratio}%`;
+          row.querySelector(".stats-bar-fill").style.width = `${ratio}%`;
+        });
+      };
+
       const performRoll = () => {
         const diceElements = getDiceElements();
         if (diceElements.length === 0) {
           return;
         }
         const type = diceTypeInput.value;
-        const definition = DIE_DEFINITIONS[type] ?? DIE_DEFINITIONS.fair;
+        const { faces, patterns } = DIE_DEFINITIONS[type] ?? DIE_DEFINITIONS.fair;
         rollButton.disabled = true;
-        animateRoll(definition.faces, definition.patterns, () => {
-          const values = diceElements.map(() => rollDie(definition.faces));
-          diceElements.forEach((die, index) => updateDie(die, values[index], definition.patterns));
+        animateRoll(faces, patterns, () => {
+          const values = diceElements.map(() => rollDie(faces));
+          diceElements.forEach((die, index) => updateDie(die, values[index], patterns));
           const total = values.reduce((sum, value) => sum + value, 0);
           totalLabel.textContent = `合計: ${total}`;
           historyLabel.textContent = `直近の出目: ${values.join(" + ")}`;
-          values.forEach((value) => {
-            rollStats.set(value, (rollStats.get(value) ?? 0) + 1);
-          });
+          values.forEach((value) => rollStats.set(value, (rollStats.get(value) ?? 0) + 1));
           updateStats();
           rollButton.disabled = false;
-        });
-      };
-
-      const updateStats = () => {
-        const total = Array.from(rollStats.values()).reduce(
-          (sum, count) => sum + count,
-          0,
-        );
-        statsTableBody.innerHTML = "";
-        rollStats.forEach((count, face) => {
-          const row = document.createElement("tr");
-          const ratio = total > 0 ? ((count / total) * 100).toFixed(1) : "0.0";
-          row.innerHTML = `
-            <td>${face}</td>
-            <td>${count}</td>
-            <td>${ratio}%</td>
-          `;
-          statsTableBody.appendChild(row);
         });
       };
 
@@ -419,7 +439,7 @@
           const die = document.createElement("div");
           die.className = "die";
           die.setAttribute("role", "img");
-          die.setAttribute("aria-label", `サイコロの出目 1`);
+          die.setAttribute("aria-label", "サイコロの出目 1");
           createPipGrid(die);
           fragment.appendChild(die);
         }
@@ -437,10 +457,17 @@
         performRoll();
       };
 
+      const resetStats = () => {
+        rollStats.forEach((_, face) => rollStats.set(face, 0));
+        updateStats();
+      };
+
       diceForm.addEventListener("submit", updateDiceConfiguration);
       rollButton.addEventListener("click", performRoll);
+      resetButton.addEventListener("click", resetStats);
 
       rebuildDice(Number(diceCountInput.value));
+      updateStats();
       performRoll();
     </script>
   </body>
