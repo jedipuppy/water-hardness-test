@@ -248,6 +248,50 @@
         <p class="result" id="total">合計: 2</p>
         <p class="history" id="history">直近の出目: 1 + 1</p>
       </section>
+      <section class="panel stats-panel">
+        <h2>出目の頻度</h2>
+        <table class="stats" aria-label="サイコロの出目頻度">
+          <thead>
+            <tr>
+              <th scope="col">目</th>
+              <th scope="col">回数</th>
+              <th scope="col">割合</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>1</td>
+              <td>0</td>
+              <td>0%</td>
+            </tr>
+            <tr>
+              <td>2</td>
+              <td>0</td>
+              <td>0%</td>
+            </tr>
+            <tr>
+              <td>3</td>
+              <td>0</td>
+              <td>0%</td>
+            </tr>
+            <tr>
+              <td>4</td>
+              <td>0</td>
+              <td>0%</td>
+            </tr>
+            <tr>
+              <td>5</td>
+              <td>0</td>
+              <td>0%</td>
+            </tr>
+            <tr>
+              <td>6</td>
+              <td>0</td>
+              <td>0%</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
     </main>
 
     <script>
@@ -285,6 +329,9 @@
       const diceTypeInput = document.getElementById("dice-type");
       const totalLabel = document.getElementById("total");
       const historyLabel = document.getElementById("history");
+      const statsTableBody = document.querySelector(".stats tbody");
+
+      const rollStats = new Map([1, 2, 3, 4, 5, 6].map((value) => [value, 0]));
 
       const createPipGrid = (dieElement) => {
         const fragment = document.createDocumentFragment();
@@ -339,7 +386,29 @@
           const total = values.reduce((sum, value) => sum + value, 0);
           totalLabel.textContent = `合計: ${total}`;
           historyLabel.textContent = `直近の出目: ${values.join(" + ")}`;
+          values.forEach((value) => {
+            rollStats.set(value, (rollStats.get(value) ?? 0) + 1);
+          });
+          updateStats();
           rollButton.disabled = false;
+        });
+      };
+
+      const updateStats = () => {
+        const total = Array.from(rollStats.values()).reduce(
+          (sum, count) => sum + count,
+          0,
+        );
+        statsTableBody.innerHTML = "";
+        rollStats.forEach((count, face) => {
+          const row = document.createElement("tr");
+          const ratio = total > 0 ? ((count / total) * 100).toFixed(1) : "0.0";
+          row.innerHTML = `
+            <td>${face}</td>
+            <td>${count}</td>
+            <td>${ratio}%</td>
+          `;
+          statsTableBody.appendChild(row);
         });
       };
 
