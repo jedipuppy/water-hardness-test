@@ -176,10 +176,22 @@
         <h2>シミュレーション：6が出る回数</h2>
         <form id="simulator-form">
           <label for="sim-rolls">
-            試行回数
+            1回あたりのサイコロを振る回数
             <input
               id="sim-rolls"
               name="sim-rolls"
+              type="number"
+              min="1"
+              step="1"
+              value="100"
+              required
+            />
+          </label>
+          <label for="sim-trials">
+            試行回数
+            <input
+              id="sim-trials"
+              name="sim-trials"
               type="number"
               min="1"
               step="1"
@@ -237,23 +249,32 @@
 
       const simulatorForm = document.getElementById("simulator-form");
       const simulationResult = document.getElementById("simulation-result");
-      const simInput = document.getElementById("sim-rolls");
+      const simRollInput = document.getElementById("sim-rolls");
+      const simTrialInput = document.getElementById("sim-trials");
 
       simulatorForm.addEventListener("submit", (event) => {
         event.preventDefault();
-        const trials = Number(simInput.value);
-        if (!Number.isInteger(trials) || trials < 1) {
+        const rollsPerTrial = Number(simRollInput.value);
+        const trialCount = Number(simTrialInput.value);
+        if (!Number.isInteger(rollsPerTrial) || rollsPerTrial < 1) {
+          simulationResult.textContent = "1回あたりの回数は 1 以上の整数を指定してください。";
+          return;
+        }
+        if (!Number.isInteger(trialCount) || trialCount < 1) {
           simulationResult.textContent = "試行回数は 1 以上の整数を指定してください。";
           return;
         }
         let sixCount = 0;
-        for (let i = 0; i < trials; i += 1) {
-          if (rollDie(6) === 6) {
-            sixCount += 1;
+        for (let trial = 0; trial < trialCount; trial += 1) {
+          for (let roll = 0; roll < rollsPerTrial; roll += 1) {
+            if (rollDie(6) === 6) {
+              sixCount += 1;
+            }
           }
         }
-        const ratio = ((sixCount / trials) * 100).toFixed(2);
-        simulationResult.textContent = `試行 ${trials.toLocaleString()} 回 → 6 が ${sixCount.toLocaleString()} 回（${ratio}%）出ました。`;
+        const totalRolls = rollsPerTrial * trialCount;
+        const ratio = ((sixCount / totalRolls) * 100).toFixed(2);
+        simulationResult.textContent = `${rollsPerTrial.toLocaleString()} 回 × ${trialCount.toLocaleString()} 試行（合計 ${totalRolls.toLocaleString()} 回）→ 6 が ${sixCount.toLocaleString()} 回（${ratio}%）出ました。`;
       });
     </script>
   </body>
