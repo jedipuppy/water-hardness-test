@@ -54,9 +54,10 @@ export default function ResultsPage() {
             ? '回答を読み込み中です…'
             : visibleCommentEntries.length === 0
               ? 'まだ回答がありません。'
-            : '提出順に推定順位と推定硬度、コメントを表示します。'}
+              : '提出順に推定順位と推定硬度、コメントを表示します。'}
         </p>
       </section>
+      <AnswersTable entries={visibleCommentEntries} isLoading={isLoading} />
       <section className="panel">
         <h3>パターン出現頻度の分布</h3>
         <p className="panel-description">
@@ -109,7 +110,6 @@ export default function ResultsPage() {
           </div>
         )}
       </section>
-      <AnswersTable entries={visibleCommentEntries} isLoading={isLoading} />
     </div>
   )
 }
