@@ -6,7 +6,7 @@ import type {
 } from 'chart.js'
 import type { LinearScale } from 'chart.js'
 import { ACTIVE_SAMPLES, TRUE_ORDER } from '../config'
-import type { SampleId } from '../types'
+import type { SampleId, WaterSample } from '../types'
 import type {
   EstimatedHardnessAnalysis,
   PatternFrequency,
@@ -85,18 +85,19 @@ export interface AverageRankScatterPayload {
 
 export function buildAverageRankPayload(
   averageRanks: SampleAverageRank[],
+  samples: WaterSample[] = ACTIVE_SAMPLES,
 ): AverageRankPayload {
   const entryMap = new Map<SampleId, SampleAverageRank>(
     averageRanks.map((entry) => [entry.sample.id, entry]),
   )
 
-  const ticks: AverageRankTick[] = ACTIVE_SAMPLES.map((sample, index) => ({
+  const ticks: AverageRankTick[] = samples.map((sample, index) => ({
     position: index + 1,
     label: sample.label,
     sampleId: sample.id,
   }))
 
-  const points: ScatterPointDatum[] = ACTIVE_SAMPLES.flatMap((sample, index) => {
+  const points: ScatterPointDatum[] = samples.flatMap((sample, index) => {
     const entry = entryMap.get(sample.id)
     if (!entry || entry.count === 0) {
       return []
@@ -433,13 +434,15 @@ export function createEstimatedHardnessOptions(
 
 export function buildEstimatedHardnessDistributionPayload(
   analysis: EstimatedHardnessAnalysis,
+  samples: WaterSample[] = ACTIVE_SAMPLES,
 ): EstimatedHardnessDistributionPayload {
-  const categories = ACTIVE_SAMPLES.map((sample) => sample.label)
+  const categories = samples.map((sample) => sample.label)
+  const labelMap = new Map<SampleId, string>(
+    samples.map((sample) => [sample.id, sample.label]),
+  )
   const points: EstimatedHardnessDistributionPoint[] = analysis.points.map(
     (point) => ({
-      x:
-        ACTIVE_SAMPLES.find((sample) => sample.id === point.sample.id)?.label ??
-        point.sample.label,
+      x: labelMap.get(point.sample.id) ?? point.sample.label,
       y: point.estimatedHardness,
       sampleId: point.sample.id,
       sampleLabel: point.sample.label,

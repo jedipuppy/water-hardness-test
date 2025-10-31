@@ -13,6 +13,7 @@ import {
   createEstimatedHardnessDistributionOptions,
   patternFrequencyChartOptions,
 } from './resultsShared'
+import { WATER_SAMPLES } from '../config'
 import { ensureResultsChartsRegistered } from './resultsChartConfig'
 import type { SampleId } from '../types'
 
@@ -32,11 +33,11 @@ export default function ResultsPage() {
     [patternFrequency],
   )
   const estimatedDistribution = useMemo(
-    () => buildEstimatedHardnessDistributionPayload(estimatedAnalysis),
+    () => buildEstimatedHardnessDistributionPayload(estimatedAnalysis, WATER_SAMPLES),
     [estimatedAnalysis],
   )
   const averageRankPayload = useMemo(
-    () => buildAverageRankPayload(averageRanks),
+    () => buildAverageRankPayload(averageRanks, WATER_SAMPLES),
     [averageRanks],
   )
   const hasAverageRankData =

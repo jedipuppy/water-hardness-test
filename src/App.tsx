@@ -12,7 +12,7 @@ const navLinks: NavLinkItem[] = [
   { kind: 'route', to: '/', label: '入力' },
   { kind: 'route', to: '/results', label: '集計' },
   { kind: 'route', to: '/analysis', label: '分析' },
-  { kind: 'external', href: 'https://accel-kitchen.com/app/water-hardness-test/test.html', label: 'テストページ', newTab: true },
+  { kind: 'external', href: 'https://accel-kitchen.com/app/water-hardness-test/test.html', label: '仮説検定', newTab: true },
 ]
 
 function App() {
