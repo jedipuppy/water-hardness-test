@@ -144,6 +144,25 @@
         transform: translateY(-2px);
         box-shadow: 0 22px 38px -26px rgba(59, 130, 246, 0.8);
       }
+      .sim-chart-panel {
+        background: rgba(148, 163, 184, 0.12);
+        border-radius: 18px;
+        padding: 1.2rem clamp(1rem, 3vw, 1.6rem);
+        display: grid;
+        gap: 0.75rem;
+      }
+
+      #sim-chart {
+        width: 100%;
+        height: 260px;
+        background: rgba(15, 23, 42, 0.65);
+        border-radius: 16px;
+      }
+
+      .sim-note {
+        font-size: 0.86rem;
+        color: #94a3b8;
+      }
     </style>
   </head>
   <body>
@@ -211,6 +230,13 @@
       <section class="history-log" id="history">
         ロール履歴: <span>なし</span>
       </section>
+      <section class="sim-chart-panel" aria-live="polite">
+        <h2>6 の出現回数分布（試行ごと）</h2>
+        <canvas id="sim-chart"></canvas>
+        <p class="sim-note" id="sim-chart-note">
+          シミュレーションを実行すると、6 の出現回数のヒストグラムを表示します。
+        </p>
+      </section>
     </main>
 
     <script>
@@ -251,6 +277,112 @@
       const simulationResult = document.getElementById("simulation-result");
       const simRollInput = document.getElementById("sim-rolls");
       const simTrialInput = document.getElementById("sim-trials");
+      const simChart = document.getElementById("sim-chart");
+      const simChartNote = document.getElementById("sim-chart-note");
+      const simChartCtx = simChart.getContext("2d");
+      let lastHistogramData = null;
+
+      function resizeCanvas(canvas) {
+        const dpr = window.devicePixelRatio || 1;
+        const rect = canvas.getBoundingClientRect();
+        const width = Math.max(rect.width, 1);
+        const height = Math.max(rect.height, 1);
+        const scaledWidth = Math.round(width * dpr);
+        const scaledHeight = Math.round(height * dpr);
+        if (canvas.width !== scaledWidth || canvas.height !== scaledHeight) {
+          canvas.width = scaledWidth;
+          canvas.height = scaledHeight;
+        }
+        return { width: canvas.width, height: canvas.height, dpr };
+      }
+
+      function drawHistogram(bins, totalTrials) {
+        const { width, height, dpr } = resizeCanvas(simChart);
+        simChartCtx.clearRect(0, 0, width, height);
+
+        if (!bins || !bins.length || !totalTrials) {
+          simChartNote.style.display = "";
+          return;
+        }
+
+        simChartNote.style.display = "none";
+        simChartCtx.save();
+
+        const paddingX = 48 * dpr;
+        const paddingY = 36 * dpr;
+        const chartWidth = Math.max(width - paddingX * 2, 1);
+        const chartHeight = Math.max(height - paddingY * 2, 1);
+        const maxFrequency =
+          bins.reduce((max, value) => (value > max ? value : max), 0) || 1;
+        const slotWidth = chartWidth / bins.length;
+        const barWidth = Math.min(Math.max(slotWidth * 0.6, 2 * dpr), slotWidth);
+        const barOffset = (slotWidth - barWidth) / 2;
+
+        simChartCtx.translate(paddingX, paddingY);
+
+        simChartCtx.strokeStyle = "rgba(148, 163, 184, 0.45)";
+        simChartCtx.lineWidth = 1 * dpr;
+        simChartCtx.beginPath();
+        simChartCtx.moveTo(0, chartHeight);
+        simChartCtx.lineTo(chartWidth, chartHeight);
+        simChartCtx.stroke();
+
+        simChartCtx.beginPath();
+        simChartCtx.moveTo(0, 0);
+        simChartCtx.lineTo(0, chartHeight);
+        simChartCtx.stroke();
+
+        simChartCtx.fillStyle = "rgba(96, 165, 250, 0.85)";
+        for (let index = 0; index < bins.length; index += 1) {
+          const count = bins[index];
+          const barHeight = (count / maxFrequency) * chartHeight;
+          const x = index * slotWidth + barOffset;
+          const y = chartHeight - barHeight;
+          simChartCtx.fillRect(x, y, barWidth, barHeight);
+        }
+
+        simChartCtx.font = `${12 * dpr}px "Segoe UI", sans-serif`;
+        simChartCtx.fillStyle = "rgba(226, 232, 240, 0.9)";
+        simChartCtx.textAlign = "center";
+        simChartCtx.textBaseline = "top";
+        for (let index = 0; index < bins.length; index += 1) {
+          const x = index * slotWidth + barOffset + barWidth / 2;
+          simChartCtx.fillText(String(index), x, chartHeight + 8 * dpr);
+        }
+
+        const tickCount = 4;
+        simChartCtx.textAlign = "right";
+        simChartCtx.textBaseline = "middle";
+        simChartCtx.strokeStyle = "rgba(148, 163, 184, 0.2)";
+        for (let tick = 0; tick <= tickCount; tick += 1) {
+          const value = Math.round((maxFrequency / tickCount) * tick);
+          const y = chartHeight - (value / maxFrequency) * chartHeight;
+          simChartCtx.fillText(String(value), -10 * dpr, y);
+          if (tick !== 0 && tick !== tickCount) {
+            simChartCtx.beginPath();
+            simChartCtx.moveTo(0, y);
+            simChartCtx.lineTo(chartWidth, y);
+            simChartCtx.stroke();
+          }
+        }
+
+        simChartCtx.restore();
+      }
+
+      function updateHistogram(bins, totalTrials) {
+        lastHistogramData = { bins: bins.slice(), total: totalTrials };
+        drawHistogram(bins, totalTrials);
+      }
+
+      window.addEventListener("resize", () => {
+        if (lastHistogramData) {
+          drawHistogram(lastHistogramData.bins, lastHistogramData.total);
+        } else {
+          resizeCanvas(simChart);
+        }
+      });
+
+      resizeCanvas(simChart);
 
       simulatorForm.addEventListener("submit", (event) => {
         event.preventDefault();
@@ -264,17 +396,32 @@
           simulationResult.textContent = "試行回数は 1 以上の整数を指定してください。";
           return;
         }
+        const sixesPerTrial = new Array(trialCount);
         let sixCount = 0;
         for (let trial = 0; trial < trialCount; trial += 1) {
+          let trialSixes = 0;
           for (let roll = 0; roll < rollsPerTrial; roll += 1) {
             if (rollDie(6) === 6) {
-              sixCount += 1;
+              trialSixes += 1;
             }
           }
+          sixesPerTrial[trial] = trialSixes;
+          sixCount += trialSixes;
         }
         const totalRolls = rollsPerTrial * trialCount;
         const ratio = ((sixCount / totalRolls) * 100).toFixed(2);
-        simulationResult.textContent = `${rollsPerTrial.toLocaleString()} 回 × ${trialCount.toLocaleString()} 試行（合計 ${totalRolls.toLocaleString()} 回）→ 6 が ${sixCount.toLocaleString()} 回（${ratio}%）出ました。`;
+        const avgSixesPerTrial = (sixCount / trialCount).toFixed(2);
+        simulationResult.textContent = `${rollsPerTrial.toLocaleString()} 回 × ${trialCount.toLocaleString()} 試行（合計 ${totalRolls.toLocaleString()} 回）→ 6 が ${sixCount.toLocaleString()} 回（${ratio}%）出ました。平均 ${avgSixesPerTrial} 回/試行です。`;
+
+        const maxSixes = sixesPerTrial.reduce(
+          (max, value) => (value > max ? value : max),
+          0
+        );
+        const histogramBins = new Array(maxSixes + 1).fill(0);
+        sixesPerTrial.forEach((value) => {
+          histogramBins[value] += 1;
+        });
+        updateHistogram(histogramBins, trialCount);
       });
     </script>
   </body>
