@@ -187,50 +187,6 @@
         font-size: 0.96rem;
       }
 
-      .stats-panel {
-        display: grid;
-        gap: 1.1rem;
-      }
-
-      .stats {
-        display: grid;
-        gap: 0.85rem;
-      }
-
-      .stats-row {
-        display: grid;
-        grid-template-columns: 36px 64px 1fr 64px;
-        align-items: center;
-        gap: 1rem;
-        font-size: 0.95rem;
-      }
-
-      .stats-face {
-        justify-self: center;
-        font-weight: 600;
-        color: #0f172a;
-      }
-
-      .stats-count,
-      .stats-ratio {
-        font-variant-numeric: tabular-nums;
-      }
-
-      .stats-bar {
-        height: 12px;
-        border-radius: 999px;
-        background: rgba(148, 163, 184, 0.28);
-        overflow: hidden;
-      }
-
-      .stats-bar-fill {
-        height: 100%;
-        width: 0;
-        border-radius: inherit;
-        background: linear-gradient(90deg, rgba(37, 99, 235, 0.9), rgba(96, 165, 250, 0.8));
-        transition: width 0.3s ease;
-      }
-
       @keyframes roll-spin {
         0% {
           transform: rotate3d(1, 1, 0, 0deg) translateY(0);
@@ -286,45 +242,8 @@
         <p class="history" id="history">直近の出目: －</p>
       </section>
       <section class="panel stats-panel">
-        <h2>出目の頻度</h2>
-        <div class="stats" aria-live="polite">
-          <div class="stats-row" data-face="1">
-            <span class="stats-face">1</span>
-            <span class="stats-count">0</span>
-            <div class="stats-bar"><div class="stats-bar-fill"></div></div>
-            <span class="stats-ratio">0%</span>
-          </div>
-          <div class="stats-row" data-face="2">
-            <span class="stats-face">2</span>
-            <span class="stats-count">0</span>
-            <div class="stats-bar"><div class="stats-bar-fill"></div></div>
-            <span class="stats-ratio">0%</span>
-          </div>
-          <div class="stats-row" data-face="3">
-            <span class="stats-face">3</span>
-            <span class="stats-count">0</span>
-            <div class="stats-bar"><div class="stats-bar-fill"></div></div>
-            <span class="stats-ratio">0%</span>
-          </div>
-          <div class="stats-row" data-face="4">
-            <span class="stats-face">4</span>
-            <span class="stats-count">0</span>
-            <div class="stats-bar"><div class="stats-bar-fill"></div></div>
-            <span class="stats-ratio">0%</span>
-          </div>
-          <div class="stats-row" data-face="5">
-            <span class="stats-face">5</span>
-            <span class="stats-count">0</span>
-            <div class="stats-bar"><div class="stats-bar-fill"></div></div>
-            <span class="stats-ratio">0%</span>
-          </div>
-          <div class="stats-row" data-face="6">
-            <span class="stats-face">6</span>
-            <span class="stats-count">0</span>
-            <div class="stats-bar"><div class="stats-bar-fill"></div></div>
-            <span class="stats-ratio">0%</span>
-          </div>
-        </div>
+        <h2>出目の分布</h2>
+        <canvas id="stats-chart" aria-label="サイコロの出目ヒストグラム"></canvas>
       </section>
     </main>
 
@@ -373,9 +292,9 @@
       const diceCountInput = document.getElementById("dice-count");
       const diceTypeInput = document.getElementById("dice-type");
       const historyLabel = document.getElementById("history");
-      const statsRows = Array.from(document.querySelectorAll(".stats-row"));
-
       const rollStats = new Map([1, 2, 3, 4, 5, 6].map((value) => [value, 0]));
+      const chartCanvas = document.getElementById("stats-chart");
+      const statsLabels = [1, 2, 3, 4, 5, 6];
 
       const createPipGrid = (dieElement) => {
         const fragment = document.createDocumentFragment();
@@ -417,14 +336,40 @@
 
       const updateStats = () => {
         const total = Array.from(rollStats.values()).reduce((sum, count) => sum + count, 0);
-        statsRows.forEach((row) => {
-          const face = Number(row.dataset.face);
+        const ctx = chartCanvas.getContext("2d");
+        const padding = 28;
+        const width = chartCanvas.width - padding * 2;
+        const height = chartCanvas.height - padding * 2;
+        ctx.clearRect(0, 0, chartCanvas.width, chartCanvas.height);
+        ctx.save();
+        ctx.translate(padding, padding);
+        ctx.fillStyle = "rgba(148, 163, 184, 0.2)";
+        ctx.fillRect(0, 0, width, height);
+        ctx.fillStyle = "rgba(37, 99, 235, 0.8)";
+        const barWidth = width / statsLabels.length - 16;
+        statsLabels.forEach((face, index) => {
           const count = rollStats.get(face) ?? 0;
-          const ratio = total > 0 ? ((count / total) * 100).toFixed(1) : "0.0";
-          row.querySelector(".stats-count").textContent = count;
-          row.querySelector(".stats-ratio").textContent = `${ratio}%`;
-          row.querySelector(".stats-bar-fill").style.width = `${ratio}%`;
+          const ratio = total > 0 ? count / total : 0;
+          const barHeight = height * ratio;
+          const x = index * (barWidth + 16) + 8;
+          const y = height - barHeight;
+          ctx.beginPath();
+          ctx.moveTo(x, height);
+          ctx.lineTo(x, y + 10);
+          ctx.quadraticCurveTo(x, y, x + 10, y);
+          ctx.lineTo(x + barWidth - 10, y);
+          ctx.quadraticCurveTo(x + barWidth, y, x + barWidth, y + 10);
+          ctx.lineTo(x + barWidth, height);
+          ctx.closePath();
+          ctx.fill();
+          ctx.fillStyle = "#0f172a";
+          ctx.font = "14px 'Segoe UI', sans-serif";
+          ctx.textAlign = "center";
+          ctx.fillText(face, x + barWidth / 2, height + 18);
+          ctx.fillText(count, x + barWidth / 2, Math.max(height - barHeight - 8, 14));
+          ctx.fillStyle = "rgba(37, 99, 235, 0.8)";
         });
+        ctx.restore();
       };
 
       const performRoll = () => {
