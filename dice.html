@@ -56,20 +56,17 @@
         width: clamp(68px, 22vw, 110px);
         aspect-ratio: 1 / 1;
         border-radius: 18px;
-        background: radial-gradient(circle at 40% 40%, #fff 0%, #f8fafc 55%, #e2e8f0 100%);
+        background: radial-gradient(circle at 35% 35%, #fff 0%, #f8fafc 60%, #e2e8f0 100%);
         box-shadow: 0 18px 36px -26px rgba(15, 23, 42, 0.55),
           inset 2px 2px 6px rgba(255, 255, 255, 0.6),
           inset -2px -4px 8px rgba(148, 163, 184, 0.6);
         position: relative;
         transform: translateZ(0);
         transition: box-shadow 0.3s ease;
-      }
-
-      .die-face {
-        position: absolute;
-        inset: clamp(0.55rem, 1.4vw, 0.9rem);
-        border-radius: inherit;
-        display: grid;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
       }
 
       .die.is-rolling {
@@ -79,21 +76,10 @@
           inset -3px -5px 10px rgba(96, 165, 250, 0.45);
       }
 
-      .pip {
-        width: clamp(12px, 4vw, 18px);
-        aspect-ratio: 1 / 1;
-        border-radius: 50%;
-        background: radial-gradient(circle at 30% 30%, #fff 0%, #dce3f2 75%, #94a3b8 100%);
-        box-shadow: inset -2px -2px 3px rgba(15, 23, 42, 0.3);
-        margin: auto;
-        opacity: 0;
-        transform: scale(0.4);
-        transition: opacity 0.18s ease, transform 0.18s ease;
-      }
-
-      .pip.visible {
-        opacity: 1;
-        transform: scale(1);
+      .die img {
+        width: 80%;
+        max-width: 100px;
+        transition: transform 0.2s ease;
       }
 
       .controls {
@@ -187,6 +173,13 @@
         font-size: 0.96rem;
       }
 
+      .stats-panel canvas {
+        width: 100%;
+        height: 260px;
+        background: rgba(148, 163, 184, 0.08);
+        border-radius: 14px;
+      }
+
       @keyframes roll-spin {
         0% {
           transform: rotate3d(1, 1, 0, 0deg) translateY(0);
@@ -248,40 +241,12 @@
     </main>
 
     <script>
-      const GRID_POSITIONS = {
-        topLeft: 1,
-        topCenter: 2,
-        topRight: 3,
-        middleLeft: 4,
-        center: 5,
-        middleRight: 6,
-        bottomLeft: 7,
-        bottomCenter: 8,
-        bottomRight: 9,
-      };
-
-      const STANDARD_PATTERNS = {
-        1: [GRID_POSITIONS.center],
-        2: [GRID_POSITIONS.topLeft, GRID_POSITIONS.bottomRight],
-        3: [GRID_POSITIONS.topLeft, GRID_POSITIONS.center, GRID_POSITIONS.bottomRight],
-        4: [GRID_POSITIONS.topLeft, GRID_POSITIONS.topRight, GRID_POSITIONS.bottomLeft, GRID_POSITIONS.bottomRight],
-        5: [GRID_POSITIONS.topLeft, GRID_POSITIONS.topRight, GRID_POSITIONS.center, GRID_POSITIONS.bottomLeft, GRID_POSITIONS.bottomRight],
-        6: [GRID_POSITIONS.topLeft, GRID_POSITIONS.topRight, GRID_POSITIONS.middleLeft, GRID_POSITIONS.middleRight, GRID_POSITIONS.bottomLeft, GRID_POSITIONS.bottomRight],
-      };
-
       const DIE_DEFINITIONS = {
         fair: {
           faces: [1, 2, 3, 4, 5, 6],
-          patterns: STANDARD_PATTERNS,
         },
         rigged: {
           faces: [2, 2, 3, 4, 6, 6],
-          patterns: {
-            2: STANDARD_PATTERNS[2],
-            3: STANDARD_PATTERNS[3],
-            4: STANDARD_PATTERNS[4],
-            6: STANDARD_PATTERNS[6],
-          },
         },
       };
 
@@ -294,23 +259,23 @@
       const historyLabel = document.getElementById("history");
       const rollStats = new Map([1, 2, 3, 4, 5, 6].map((value) => [value, 0]));
       const chartCanvas = document.getElementById("stats-chart");
+      chartCanvas.style.width = "100%";
+      chartCanvas.style.height = "260px";
+      const resizeCanvas = () => {
+        const ratio = window.devicePixelRatio || 1;
+        const displayWidth = chartCanvas.clientWidth || 640;
+        const displayHeight = 260;
+        chartCanvas.width = displayWidth * ratio;
+        chartCanvas.height = displayHeight * ratio;
+      };
       const statsLabels = [1, 2, 3, 4, 5, 6];
 
-      const createPipGrid = (dieElement) => {
-        const fragment = document.createDocumentFragment();
-        for (let i = 0; i < 9; i += 1) {
-          fragment.appendChild(Object.assign(document.createElement("div"), { className: "pip hidden" }));
+      const updateDie = (dieElement, value) => {
+        const img = dieElement.querySelector("img");
+        if (img) {
+          img.src = `src/assets/img/${value}.png`;
+          img.alt = `サイコロの出目 ${value}`;
         }
-        dieElement.innerHTML = "";
-        dieElement.appendChild(fragment);
-      };
-
-      const updateDie = (dieElement, value, patterns) => {
-        const pips = dieElement.querySelectorAll(".pip");
-        const positions = patterns[value] ?? STANDARD_PATTERNS[value];
-        pips.forEach((pip, index) => {
-        pip.classList.toggle("visible", positions.includes(index + 1));
-        });
         dieElement.setAttribute("aria-label", `サイコロの出目 ${value}`);
       };
 
@@ -318,13 +283,13 @@
 
       const getDiceElements = () => Array.from(diceBoard.querySelectorAll(".die"));
 
-      const animateRoll = (faces, patterns, callback) => {
+      const animateRoll = (faces, callback) => {
         const frames = 12;
         let frame = 0;
         const diceElements = getDiceElements();
         diceElements.forEach((die) => die.classList.add("is-rolling"));
         const interval = setInterval(() => {
-          diceElements.forEach((die) => updateDie(die, rollDie(faces), patterns));
+          diceElements.forEach((die) => updateDie(die, rollDie(faces)));
           frame += 1;
           if (frame >= frames) {
             clearInterval(interval);
@@ -335,40 +300,53 @@
       };
 
       const updateStats = () => {
-        const total = Array.from(rollStats.values()).reduce((sum, count) => sum + count, 0);
+        const counts = statsLabels.map((face) => rollStats.get(face) ?? 0);
+        const maxCount = Math.max(...counts, 1);
         const ctx = chartCanvas.getContext("2d");
-        const padding = 28;
-        const width = chartCanvas.width - padding * 2;
-        const height = chartCanvas.height - padding * 2;
         ctx.clearRect(0, 0, chartCanvas.width, chartCanvas.height);
+        const paddingX = 48;
+        const paddingY = 36;
+        const width = chartCanvas.width - paddingX * 2;
+        const height = chartCanvas.height - paddingY * 2;
+        const originX = paddingX;
+        const originY = chartCanvas.height - paddingY;
+
         ctx.save();
-        ctx.translate(padding, padding);
-        ctx.fillStyle = "rgba(148, 163, 184, 0.2)";
-        ctx.fillRect(0, 0, width, height);
-        ctx.fillStyle = "rgba(37, 99, 235, 0.8)";
-        const barWidth = width / statsLabels.length - 16;
+        ctx.strokeStyle = "rgba(148, 163, 184, 0.45)";
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(originX, paddingY - 8);
+        ctx.lineTo(originX, originY);
+        ctx.lineTo(chartCanvas.width - paddingX + 12, originY);
+        ctx.stroke();
+
+        const barSpacing = 18;
+        const barWidth = (width - barSpacing * (statsLabels.length - 1)) / statsLabels.length;
+        ctx.font = "14px 'Segoe UI', sans-serif";
+        ctx.textAlign = "center";
+        ctx.fillStyle = "rgba(37, 99, 235, 0.82)";
+
         statsLabels.forEach((face, index) => {
-          const count = rollStats.get(face) ?? 0;
-          const ratio = total > 0 ? count / total : 0;
-          const barHeight = height * ratio;
-          const x = index * (barWidth + 16) + 8;
-          const y = height - barHeight;
+          const count = counts[index];
+          const barHeight = (count / maxCount) * height;
+          const x = originX + index * (barWidth + barSpacing);
+          const y = originY - barHeight;
           ctx.beginPath();
-          ctx.moveTo(x, height);
+          ctx.moveTo(x, originY);
           ctx.lineTo(x, y + 10);
           ctx.quadraticCurveTo(x, y, x + 10, y);
           ctx.lineTo(x + barWidth - 10, y);
           ctx.quadraticCurveTo(x + barWidth, y, x + barWidth, y + 10);
-          ctx.lineTo(x + barWidth, height);
+          ctx.lineTo(x + barWidth, originY);
           ctx.closePath();
           ctx.fill();
+
           ctx.fillStyle = "#0f172a";
-          ctx.font = "14px 'Segoe UI', sans-serif";
-          ctx.textAlign = "center";
-          ctx.fillText(face, x + barWidth / 2, height + 18);
-          ctx.fillText(count, x + barWidth / 2, Math.max(height - barHeight - 8, 14));
-          ctx.fillStyle = "rgba(37, 99, 235, 0.8)";
+          ctx.fillText(face, x + barWidth / 2, originY + 20);
+          ctx.fillText(count, x + barWidth / 2, Math.max(y - 6, paddingY + 12));
+          ctx.fillStyle = "rgba(37, 99, 235, 0.82)";
         });
+
         ctx.restore();
       };
 
@@ -378,11 +356,11 @@
           return;
         }
         const type = diceTypeInput.value;
-        const { faces, patterns } = DIE_DEFINITIONS[type] ?? DIE_DEFINITIONS.fair;
+        const { faces } = DIE_DEFINITIONS[type] ?? DIE_DEFINITIONS.fair;
         rollButton.disabled = true;
-        animateRoll(faces, patterns, () => {
+        animateRoll(faces, () => {
           const values = diceElements.map(() => rollDie(faces));
-          diceElements.forEach((die, index) => updateDie(die, values[index], patterns));
+          diceElements.forEach((die, index) => updateDie(die, values[index]));
           historyLabel.textContent = `直近の出目: ${values.join(" + ")}`;
           values.forEach((value) => rollStats.set(value, (rollStats.get(value) ?? 0) + 1));
           updateStats();
@@ -394,19 +372,15 @@
         diceBoard.innerHTML = "";
         const fragment = document.createDocumentFragment();
         for (let i = 0; i < count; i += 1) {
-  const die = document.createElement("div");
-  die.className = "die";
-  die.setAttribute("role", "img");
-  die.setAttribute("aria-label", "サイコロの出目 1");
-  const face = document.createElement("div");
-  face.className = "die-face";
-  for (let i = 0; i < 9; i += 1) {
-    const cell = document.createElement("div");
-    face.appendChild(cell);
-  }
-  die.appendChild(face);
-  createPipGrid(face);
-  fragment.appendChild(die);
+          const die = document.createElement("div");
+          die.className = "die";
+          die.setAttribute("role", "img");
+          die.setAttribute("aria-label", "サイコロの出目 1");
+          const faceImg = document.createElement("img");
+          faceImg.src = "src/assets/img/1.png";
+          faceImg.alt = "サイコロの出目 1";
+          die.appendChild(faceImg);
+          fragment.appendChild(die);
         }
         diceBoard.appendChild(fragment);
       };
@@ -431,6 +405,12 @@
       rollButton.addEventListener("click", performRoll);
       resetButton.addEventListener("click", resetStats);
 
+      window.addEventListener("resize", () => {
+        resizeCanvas();
+        updateStats();
+      });
+
+      resizeCanvas();
       rebuildDice(Number(diceCountInput.value));
       updateStats();
       performRoll();
