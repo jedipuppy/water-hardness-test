@@ -180,13 +180,6 @@
         box-shadow: none;
       }
 
-      .result {
-        font-size: clamp(1.8rem, 5vw, 2.3rem);
-        font-weight: 700;
-        color: #0f172a;
-        text-align: center;
-      }
-
       .history {
         margin: 0;
         text-align: center;
@@ -290,7 +283,6 @@
           <button type="button" id="roll-button">サイコロを振る</button>
           <button type="button" id="reset-button" class="secondary">統計をリセット</button>
         </div>
-        <p class="result" id="total">合計: 0</p>
         <p class="history" id="history">直近の出目: －</p>
       </section>
       <section class="panel stats-panel">
@@ -380,7 +372,6 @@
       const diceForm = document.getElementById("dice-form");
       const diceCountInput = document.getElementById("dice-count");
       const diceTypeInput = document.getElementById("dice-type");
-      const totalLabel = document.getElementById("total");
       const historyLabel = document.getElementById("history");
       const statsRows = Array.from(document.querySelectorAll(".stats-row"));
 
@@ -447,8 +438,6 @@
         animateRoll(faces, patterns, () => {
           const values = diceElements.map(() => rollDie(faces));
           diceElements.forEach((die, index) => updateDie(die, values[index], patterns));
-          const total = values.reduce((sum, value) => sum + value, 0);
-          totalLabel.textContent = `合計: ${total}`;
           historyLabel.textContent = `直近の出目: ${values.join(" + ")}`;
           values.forEach((value) => rollStats.set(value, (rollStats.get(value) ?? 0) + 1));
           updateStats();
