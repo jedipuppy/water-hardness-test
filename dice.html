@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>サイコロロール</title>
+    <style>
+      :root {
+        font-family: "Segoe UI", "Hiragino Sans", "Meiryo", sans-serif;
+        color-scheme: light dark;
+        --accent: #2563eb;
+        --accent-dark: #1d4ed8;
+        --surface: rgba(255, 255, 255, 0.9);
+        --shadow: rgba(15, 23, 42, 0.12);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(135deg, #dbeafe 0%, #f8fafc 100%);
+      }
+
+      .app {
+        width: min(560px, 92vw);
+        padding: clamp(1.8rem, 4vw, 2.6rem);
+        background: var(--surface);
+        border-radius: 18px;
+        box-shadow: 0 30px 60px -30px var(--shadow);
+        display: grid;
+        gap: 1.5rem;
+      }
+
+      h1 {
+        margin: 0;
+        font-size: clamp(1.6rem, 4vw, 2.2rem);
+        text-align: center;
+        color: var(--accent-dark);
+      }
+
+      .dice-board {
+        display: flex;
+        justify-content: center;
+        gap: clamp(1.5rem, 5vw, 2.4rem);
+      }
+
+      .die {
+        width: clamp(72px, 25vw, 120px);
+        aspect-ratio: 1 / 1;
+        border-radius: 18px;
+        background: #fff;
+        box-shadow: inset 0 0 0 1px rgba(148, 163, 184, 0.35),
+          0 18px 32px -24px rgba(15, 23, 42, 0.45);
+        display: grid;
+        padding: clamp(0.6rem, 1.6vw, 1rem);
+        position: relative;
+      }
+
+      .pip {
+        width: clamp(14px, 4vw, 18px);
+        aspect-ratio: 1 / 1;
+        border-radius: 50%;
+        background: radial-gradient(circle at 30% 30%, #fff 0%, #f1f5f9 70%);
+        box-shadow: inset -1px -1px 3px rgba(15, 23, 42, 0.25);
+        margin: auto;
+      }
+
+      .pip.hidden {
+        visibility: hidden;
+      }
+
+      .controls {
+        text-align: center;
+        display: grid;
+        gap: 1rem;
+      }
+
+      .controls form {
+        display: flex;
+        justify-content: center;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+        align-items: center;
+      }
+
+      .controls label {
+        font-size: 0.95rem;
+        color: #475569;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+
+      .controls input[type="number"] {
+        width: clamp(70px, 14vw, 90px);
+        padding: 0.55rem 0.65rem;
+        border-radius: 999px;
+        border: 1px solid rgba(148, 163, 184, 0.65);
+        background: rgba(255, 255, 255, 0.9);
+        font-size: 1rem;
+        text-align: center;
+        transition: border-color 0.18s ease;
+      }
+
+      .controls input[type="number"]:focus {
+        outline: none;
+        border-color: var(--accent);
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+      }
+
+      button {
+        cursor: pointer;
+        padding: 0.9rem clamp(2.8rem, 6vw, 3.6rem);
+        border-radius: 999px;
+        border: none;
+        font-size: 1rem;
+        font-weight: 600;
+        color: #fff;
+        background: var(--accent);
+        transition: transform 0.18s ease, box-shadow 0.18s ease,
+          background 0.18s ease;
+      }
+
+      button:hover {
+        transform: translateY(-2px);
+        background: var(--accent-dark);
+        box-shadow: 0 18px 26px -18px rgba(37, 99, 235, 0.6);
+      }
+
+      button:active {
+        transform: translateY(0);
+        box-shadow: none;
+      }
+
+      .result {
+        font-size: clamp(1.8rem, 5vw, 2.4rem);
+        font-weight: 700;
+        text-align: center;
+        color: #0f172a;
+      }
+
+      .history {
+        font-size: 0.95rem;
+        color: #475569;
+        text-align: center;
+      }
+
+      @media (max-width: 540px) {
+        .dice-board {
+          gap: 1.2rem;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="app" aria-live="polite">
+      <h1>サイコロを振る</h1>
+      <section class="dice-board" aria-label="サイコロの出目">
+        <div class="die" role="img" aria-label="サイコロの出目 1">
+          <div class="pip"></div>
+          <div class="pip hidden"></div>
+          <div class="pip hidden"></div>
+          <div class="pip hidden"></div>
+          <div class="pip hidden"></div>
+          <div class="pip hidden"></div>
+          <div class="pip hidden"></div>
+          <div class="pip hidden"></div>
+          <div class="pip hidden"></div>
+        </div>
+      </section>
+      <section class="controls">
+        <form id="dice-form">
+          <label for="dice-count">
+            サイコロの数
+            <input
+              id="dice-count"
+              name="dice-count"
+              type="number"
+              min="1"
+              max="12"
+              value="2"
+              required
+            />
+          </label>
+          <label for="dice-type">
+            サイコロ
+            <select id="dice-type" name="dice-type">
+              <option value="fair">通常（1〜6）</option>
+              <option value="rigged">イカサマ（2,2,3,4,6,6）</option>
+            </select>
+          </label>
+          <button type="submit" id="update-button">更新</button>
+        </form>
+        <button type="button" id="roll-button">サイコロを振る</button>
+        <p class="result" id="total">合計: 2</p>
+        <p class="history" id="history">直近の出目: 1 + 1</p>
+      </section>
+    </main>
+
+    <script>
+      const STANDARD_PATTERNS = {
+        1: [4],
+        2: [2, 6],
+        3: [2, 4, 6],
+        4: [1, 3, 7, 9],
+        5: [1, 3, 4, 7, 9],
+        6: [1, 3, 4, 6, 7, 9],
+      };
+
+      const DIE_DEFINITIONS = {
+        fair: {
+          label: "通常（1〜6）",
+          faces: [1, 2, 3, 4, 5, 6],
+          patterns: STANDARD_PATTERNS,
+        },
+        rigged: {
+          label: "イカサマ（2,2,3,4,6,6）",
+          faces: [2, 2, 3, 4, 6, 6],
+          patterns: {
+            2: STANDARD_PATTERNS[2],
+            3: STANDARD_PATTERNS[3],
+            4: STANDARD_PATTERNS[4],
+            6: STANDARD_PATTERNS[6],
+          },
+        },
+      };
+
+      const diceBoard = document.querySelector(".dice-board");
+      const rollButton = document.getElementById("roll-button");
+      const diceForm = document.getElementById("dice-form");
+      const diceCountInput = document.getElementById("dice-count");
+      const diceTypeInput = document.getElementById("dice-type");
+      const totalLabel = document.getElementById("total");
+      const historyLabel = document.getElementById("history");
+
+      const createPipGrid = (dieElement) => {
+        const fragment = document.createDocumentFragment();
+        for (let i = 0; i < 9; i += 1) {
+          fragment.appendChild(Object.assign(document.createElement("div"), { className: "pip hidden" }));
+        }
+        dieElement.innerHTML = "";
+        dieElement.appendChild(fragment);
+      };
+
+      const updateDie = (dieElement, value, patterns) => {
+        const pips = dieElement.querySelectorAll(".pip");
+        pips.forEach((pip, index) => {
+          const positions = patterns[value] ?? STANDARD_PATTERNS[value];
+          pip.classList.toggle("hidden", !positions.includes(index + 1));
+        });
+        dieElement.setAttribute("aria-label", `サイコロの出目 ${value}`);
+      };
+
+      const rollDie = (faces) => faces[Math.floor(Math.random() * faces.length)];
+
+      const getDiceElements = () =>
+        Array.from(diceBoard.querySelectorAll(".die"));
+
+      const animateRoll = (faces, patterns, callback) => {
+        const frames = 12;
+        let frame = 0;
+        const interval = setInterval(() => {
+          getDiceElements().forEach((die) => updateDie(die, rollDie(faces), patterns));
+          frame += 1;
+          if (frame >= frames) {
+            clearInterval(interval);
+            callback();
+          }
+        }, 60);
+      };
+
+      const performRoll = () => {
+        const diceElements = getDiceElements();
+        if (diceElements.length === 0) {
+          return;
+        }
+        const type = diceTypeInput.value;
+        const definition = DIE_DEFINITIONS[type] ?? DIE_DEFINITIONS.fair;
+        rollButton.disabled = true;
+        animateRoll(definition.faces, definition.patterns, () => {
+          const values = diceElements.map(() => rollDie(definition.faces));
+          diceElements.forEach((die, index) => updateDie(die, values[index], definition.patterns));
+          const total = values.reduce((sum, value) => sum + value, 0);
+          totalLabel.textContent = `合計: ${total}`;
+          historyLabel.textContent = `直近の出目: ${values.join(" + ")}`;
+          rollButton.disabled = false;
+        });
+      };
+
+      const rebuildDice = (count) => {
+        diceBoard.innerHTML = "";
+        const fragment = document.createDocumentFragment();
+        for (let i = 0; i < count; i += 1) {
+          const die = document.createElement("div");
+          die.className = "die";
+          die.setAttribute("role", "img");
+          die.setAttribute("aria-label", `サイコロの出目 1`);
+          createPipGrid(die);
+          fragment.appendChild(die);
+        }
+        diceBoard.appendChild(fragment);
+      };
+
+      const updateDiceConfiguration = (event) => {
+        event?.preventDefault();
+        const count = Number(diceCountInput.value);
+        if (!Number.isInteger(count) || count < 1 || count > 12) {
+          alert("サイコロの数は 1 〜 12 の整数で指定してください。");
+          return;
+        }
+        rebuildDice(count);
+        performRoll();
+      };
+
+      diceForm.addEventListener("submit", updateDiceConfiguration);
+      rollButton.addEventListener("click", performRoll);
+
+      rebuildDice(Number(diceCountInput.value));
+      performRoll();
+    </script>
+  </body>
+</html>
