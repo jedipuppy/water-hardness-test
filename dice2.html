@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>ボードゲームで使うサイコロを振る：シンプル版</title>
+    <style>
+      :root {
+        font-family: "Segoe UI", "Hiragino Sans", "Meiryo", sans-serif;
+        background-color: #111827;
+        color: #f8fafc;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 2rem;
+      }
+
+      main {
+        display: grid;
+        gap: 1.2rem;
+        width: min(520px, 92vw);
+      }
+
+      h1 {
+        margin: 0;
+        font-size: clamp(1.6rem, 4vw, 2.2rem);
+      }
+
+      p {
+        margin: 0;
+        color: #cbd5f5;
+        font-size: 0.95rem;
+        line-height: 1.6;
+      }
+
+      .dice-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(96px, 1fr));
+        gap: 1.2rem;
+      }
+
+      .die-button {
+        aspect-ratio: 1 / 1;
+        background: linear-gradient(145deg, #1f2937, #0f172a);
+        border-radius: 18px;
+        border: none;
+        box-shadow: 0 14px 28px -24px rgba(59, 130, 246, 0.8),
+          inset 2px 2px 6px rgba(59, 130, 246, 0.25);
+        transition: transform 0.18s ease, box-shadow 0.18s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        font-size: clamp(1.8rem, 5vw, 2.6rem);
+        color: #f8fafc;
+      }
+
+      .die-button:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 22px 36px -24px rgba(59, 130, 246, 0.7);
+      }
+
+      .die-button:active {
+        transform: translateY(0);
+      }
+
+      .result {
+        font-size: 1.1rem;
+        color: #dbeafe;
+      }
+
+      .history-log {
+        background: rgba(148, 163, 184, 0.12);
+        border-radius: 14px;
+        padding: 1rem;
+        font-size: 0.96rem;
+        min-height: 3rem;
+      }
+
+      .history-log span {
+        color: #93c5fd;
+      }
+
+      .simulator {
+        background: rgba(148, 163, 184, 0.12);
+        border-radius: 18px;
+        padding: 1.2rem clamp(1rem, 3vw, 1.6rem);
+        display: grid;
+        gap: 1rem;
+      }
+
+      #simulator-form {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.8rem;
+        align-items: center;
+      }
+
+      #simulator-form label {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        background: rgba(30, 41, 59, 0.65);
+        padding: 0.45rem 0.9rem;
+        border-radius: 999px;
+        font-size: 0.95rem;
+        color: #e2e8f0;
+      }
+
+      #simulator-form input {
+        border-radius: 999px;
+        border: 1px solid rgba(148, 163, 184, 0.5);
+        background: rgba(17, 24, 39, 0.8);
+        color: #f8fafc;
+        padding: 0.45rem 0.8rem;
+        font-size: 1rem;
+        width: 120px;
+      }
+
+      #simulator-form input:focus {
+        outline: none;
+        border-color: rgba(96, 165, 250, 0.9);
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.35);
+      }
+
+      #simulator-form button {
+        padding: 0.6rem 1.6rem;
+        border-radius: 999px;
+        background: linear-gradient(135deg, #2563eb, #1d4ed8);
+        border: none;
+        color: #f8fafc;
+        font-weight: 600;
+        cursor: pointer;
+        box-shadow: 0 18px 32px -24px rgba(37, 99, 235, 0.7);
+        transition: transform 0.18s ease, box-shadow 0.18s ease;
+      }
+
+      #simulator-form button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 22px 38px -26px rgba(59, 130, 246, 0.8);
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <h1>ボードゲームで使うサイコロを振る</h1>
+        <p>
+          よく使う5種類のサイコロをワンタッチでロールできます。<br />
+          ボタンを押すと即座に結果が確認でき、履歴も保持します。
+        </p>
+      </header>
+      <section class="dice-grid" aria-label="サイコロの一覧">
+        <button class="die-button" data-sides="4" aria-label="4面ダイス">
+          D4
+        </button>
+        <button class="die-button" data-sides="6" aria-label="6面ダイス">
+          D6
+        </button>
+        <button class="die-button" data-sides="8" aria-label="8面ダイス">
+          D8
+        </button>
+        <button class="die-button" data-sides="12" aria-label="12面ダイス">
+          D12
+        </button>
+        <button class="die-button" data-sides="20" aria-label="20面ダイス">
+          D20
+        </button>
+      </section>
+      <section class="simulator">
+        <h2>シミュレーション：6が出る回数</h2>
+        <form id="simulator-form">
+          <label for="sim-rolls">
+            試行回数
+            <input
+              id="sim-rolls"
+              name="sim-rolls"
+              type="number"
+              min="1"
+              step="1"
+              value="1000"
+              required
+            />
+          </label>
+          <button type="submit">シミュレーション実行</button>
+        </form>
+        <p class="result" id="simulation-result">
+          シミュレーション未実行
+        </p>
+      </section>
+      <section aria-live="polite" class="result" id="result">
+        D6 を待機中…
+      </section>
+      <section class="history-log" id="history">
+        ロール履歴: <span>なし</span>
+      </section>
+    </main>
+
+    <script>
+      const buttons = document.querySelectorAll(".die-button");
+      const resultEl = document.getElementById("result");
+      const historyEl = document.getElementById("history").querySelector("span");
+      const history = [];
+
+      function rollDie(sides) {
+        return Math.floor(Math.random() * sides) + 1;
+      }
+
+      function updateHistory(label, value) {
+        history.unshift(`${label}: ${value}`);
+        if (history.length > 12) history.pop();
+        historyEl.textContent = history.join(" / ");
+      }
+
+      function handleRoll(event) {
+        const button = event.currentTarget;
+        const sides = Number(button.dataset.sides);
+        const value = rollDie(sides);
+        button.disabled = true;
+        button.style.transform = "translateY(-6px) rotateX(18deg)";
+        setTimeout(() => {
+          button.disabled = false;
+          button.style.transform = "";
+          resultEl.textContent = `${button.textContent.trim()} → ${value}`;
+          updateHistory(button.textContent.trim(), value);
+        }, 180);
+      }
+
+      buttons.forEach((button) => {
+        button.addEventListener("click", handleRoll);
+      });
+
+      const simulatorForm = document.getElementById("simulator-form");
+      const simulationResult = document.getElementById("simulation-result");
+      const simInput = document.getElementById("sim-rolls");
+
+      simulatorForm.addEventListener("submit", (event) => {
+        event.preventDefault();
+        const trials = Number(simInput.value);
+        if (!Number.isInteger(trials) || trials < 1) {
+          simulationResult.textContent = "試行回数は 1 以上の整数を指定してください。";
+          return;
+        }
+        let sixCount = 0;
+        for (let i = 0; i < trials; i += 1) {
+          if (rollDie(6) === 6) {
+            sixCount += 1;
+          }
+        }
+        const ratio = ((sixCount / trials) * 100).toFixed(2);
+        simulationResult.textContent = `試行 ${trials.toLocaleString()} 回 → 6 が ${sixCount.toLocaleString()} 回（${ratio}%）出ました。`;
+      });
+    </script>
+  </body>
+</html>
